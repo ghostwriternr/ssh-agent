@@ -27,6 +27,23 @@ try {
 
     console.log("Starting ssh-agent");
 
+    const isWindows = process.env['OS'] === 'Windows_NT';
+    if (isWindows) {
+        const knownHostsPath = `${process.env['USERPROFILE']}/.ssh/known_hosts`;
+        const fs = require('fs');
+        const sshKeyScanCmd = 'ssh-keyscan github.com';
+
+        try {
+            const knownHosts = child_process.execSync(sshKeyScanCmd).toString();
+            fs.writeFileSync(knownHostsPath, knownHosts, { mode: '600' });
+            console.log(`Created known_hosts file at ${knownHostsPath}`);
+        } catch (error) {
+            console.log(`Failed to create known_hosts file: ${error.message}`);
+            core.setFailed(error.message);
+            return;
+        }
+    }
+
     const authSock = core.getInput('ssh-auth-sock');
     const sshAgentArgs = (authSock && authSock.length > 0) ? ['-a', authSock] : [];
 
